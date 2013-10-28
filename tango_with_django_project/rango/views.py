@@ -4,6 +4,7 @@ from django.shortcuts import render_to_response
 from rango.models import Category
 from rango.models import Page
 from rango.forms import CategoryForm
+from rango.forms import PageForm
 
 def encode_url(input_string):
     return input_string.replace(' ', '-')
@@ -31,12 +32,14 @@ def category(request, category_name_url):
     context = RequestContext(request)
     category_name = decode_url(category_name_url)
     context_dict = {'category_name': category_name}
+    context_dict['category_name_url'] = category_name_url
 
     try:
         category = Category.objects.get(name=category_name)
         pages = Page.objects.filter(category=category)
         context_dict['pages'] = pages
         context_dict['category'] = category
+
     except Category.DoesNotExist:
         pass
     return render_to_response('rango/category.html',context_dict,context)
@@ -58,3 +61,36 @@ def add_category(request):
 
     return render_to_response('rango/add_category.html', {'form': form},context)
 
+def add_page(request, category_name_url):
+    context = RequestContext(request)
+
+    category_name = decode_url(category_name_url)
+    if request.method == 'POST':
+        form = PageForm(request.POST)
+
+        if form.is_valid():
+            # This time we cannot commit straight away.
+            # Not all fields are automatically populated!
+            page = form.save(commit=False)
+
+            # Retrieve the associated Category object so we can add it.
+            cat = Category.objects.get(name=category_name)
+            page.category = cat
+
+            # Also, create a default value for the number of views.
+            page.views = 0
+
+            # With this, we can then save our new model instance.
+            page.save()
+
+            # Now that the page is saved, display the category instead.
+            return category(request, category_name)
+        else:
+            print form.errors
+    else:
+        form = PageForm()
+
+    return render_to_response( 'rango/add_page.html',
+            {'category_name_url': category_name_url,
+             'category_name': category_name, 'form': form},
+             context)
