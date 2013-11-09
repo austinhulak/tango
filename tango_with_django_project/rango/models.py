@@ -1,5 +1,7 @@
 from django.db import models
 import urllib
+#importing the User model
+from django.contrib.auth.models import User
 # Create your models here.
 
 class Category(models.Model):
@@ -18,3 +20,16 @@ class Page(models.Model):
 
     def __unicode__(self):
         return self.title
+
+class UserProfile(models.Model):
+    #this next line links this class to the User model instance in the models file
+    user = models.OneToOneField(User)
+
+    #here we are adding additional attributes
+    website = models.URLField(blank=True)
+    #'upload_to' automatically places all uploaded files into MEDIA/{upload_to value}.. so in this case MEDIA/profile_images/
+    picture = models.ImageField(upload_to='profile_images', blank=True)
+
+    # Overide the __unicode__() method to return out something meanginful?
+    def __unicode__(self):
+        return self.user.username
